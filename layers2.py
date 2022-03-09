@@ -78,17 +78,17 @@ class Dense(layers.Layer):
 class GraphConvolution(layers.Layer):
     """
     Graph convolution layer.
-    这里的output_dim实际上并不是output的dimension，而是神经元的个数
+    input_dim：上一层输出的第1维的长度，即提取后的特征长度h_l
+    output_dim：实际上不是output的dimension，而是本层神经元的个数，即h_(l+1)
     """
     def __init__(self, input_dim, output_dim, num_features_nonzero,
                  dropout=0.,
-                 is_sparse_inputs=False,
+                 is_sparse_inputs=False, #
                  activation=tf.nn.relu,
                  bias=False,
                  featureless=False, **kwargs):
         super(GraphConvolution, self).__init__(**kwargs)
         # super().__init__()
-
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.dropout = dropout
@@ -108,9 +108,9 @@ class GraphConvolution(layers.Layer):
             self.bias = self.add_weight(name='bias', shape = [self.output_dim])
 
     def call(self, inputs, training=None, flatten=None):
-        '''inputs格式：(features, support),features实际为H，support为(D^-0.5AD^0.5)
+        '''inputs格式：(features, support),features为H_l，support为(D^-0.5AD^0.5)
         training默认取None
-        输出：新的H，维度为feature的长度（即d）'''
+        输出：H_(l+1)，维度为feature的长度（即d）'''
         x, support_ = inputs[:,:-28], inputs[:,-28:]
 
         if self.is_sparse_inputs:
@@ -130,7 +130,6 @@ class GraphConvolution(layers.Layer):
             pre_sup = self.weight
 
         # TODO：之后把sparse=True，只需把support_转为稀疏矩阵即可
-        # support = dot(support_, pre_sup, sparse=True) # (D^-0.5)A(D^0.5)HW
         support = dot(support_, pre_sup, sparse=False)  # (D^-0.5)A(D^0.5)HW
         supports.append((support))
         # for i in range(len(support_)):
@@ -150,4 +149,3 @@ class GraphConvolution(layers.Layer):
         # if flatten:
         #     return self.activation(output).reshape()
         return self.activation(output)
-
